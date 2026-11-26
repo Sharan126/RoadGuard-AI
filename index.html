@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoadGuard AI — Smart Helmet &amp; Bike ECU</title>
+    <style>
+        :root {
+            --bg: #070d17;
+            --card: #0e1829;
+            --card-2: #142238;
+            --line: #213656;
+            --text: #f3f7fc;
+            --muted: #93a8c7;
+            --blue: #38bdf8;
+            --green: #22c55e;
+            --green-bg: rgba(34, 197, 94, 0.15);
+            --green-line: rgba(34, 197, 94, 0.45);
+            --red: #ef4444;
+            --red-bg: rgba(239, 68, 68, 0.16);
+            --red-line: rgba(248, 113, 113, 0.5);
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.15);
+            --amber-line: rgba(251, 191, 36, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 16px;
+            line-height: 1.45;
+        }
+
+        .wrap {
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+
+        .top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 15px 18px;
+            margin-bottom: 14px;
+        }
+
+        .top h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .top p {
+            font-size: 0.84rem;
+            color: var(--muted);
+        }
+
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pill {
+            font-size: 0.78rem;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: var(--card-2);
+            border: 1px solid var(--line);
+            color: var(--muted);
+        }
+
+        .pill strong {
+            color: var(--text);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .tab-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            border-color: var(--blue);
+        }
+
+        .btn.active {
+            background: var(--card-2);
+            border-color: var(--blue);
+        }
+
+        .btn.sim-on {
+            background: var(--amber-bg);
+            border-color: var(--amber-line);
+            color: #fde68a;
+        }
+
+        .btn.ok {
+            border-color: var(--green-line);
+            color: #86efac;
+        }
+
+        .btn.bad {
+            border-color: var(--red-line);
+            color: #fca5a5;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .banner {
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            border: 1.5px solid var(--red-line);
+            background: var(--red-bg);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .banner.unlocked {
+            border-color: var(--green-line);
+            background: var(--green-bg);
+        }
+
+        .banner-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+        }
+
+        .banner.locked .banner-title {
+            color: #fca5a5;
+        }
+
+        .banner.unlocked .banner-title {
+            color: #86efac;
+        }
+
+        .banner-sub {
+            font-size: 0.88rem;
+            margin-top: 2px;
+        }
+
+        .rgb-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(7, 13, 23, 0.7);
+            border: 1px solid var(--line);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .led {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 10px var(--red);
+        }
+
+        .led.green {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .box {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            padding: 15px;
+        }
+
+        .box-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .kicker {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+
+        .tag.ok {
+            color: #86efac;
+            background: var(--green-bg);
+            border: 1px solid var(--green-line);
+        }
+
+        .tag.bad {
+            color: #fca5a5;
+            background: var(--red-bg);
+            border: 1px solid var(--red-line);
+        }
+
+        .tag.warn {
+            color: #fde68a;
+            background: var(--amber-bg);
+            border: 1px solid var(--amber-line);
+        }
+
+        .main-val {
+            font-size: 1.04rem;
+            font-weight: 800;
+            margin-bottom: 3px;
+        }
+
+        .sub-val {
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .kv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .kv {
+            background: var(--card-2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .kv span {
+            display: block;
+            font-size: 0.73rem;
+            color: var(--muted);
+        }
+
+        .kv strong {
+            font-size: 0.92rem;
+            word-break: break-word;
+        }
+
+        .sim-panel {
+            display: none;
+            background: var(--card);
+            border: 1px solid var(--amber-line);
+            border-radius: 13px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+
+        .sim-panel.open {
+            display: block;
+        }
+
+        .sim-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .demo-steps {
+            display: grid;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .demo-step {
+            background: var(--card-2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 11px 13px;
+            font-size: 0.86rem;
+        }
+
+        .demo-step strong {
+            color: var(--blue);
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        a.map-link {
+            color: var(--blue);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        a.map-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header class="top">
+            <div>
+                <h1>RoadGuard AI &mdash; Smart Helmet &amp; Bike ECU</h1>
+                <p>1 Person (<strong>R001</strong>) &bull; 1 Helmet (<strong>RH001</strong>) &bull; 1 Bike
+                    (<strong>KA00XX0000</strong>)</p>
+            </div>
+            <div class="pills">
+                <span class="pill">Hotspot: <strong>vivo T3x 5G</strong></span>
+                <span class="pill">Mode: <strong id="modeLabel">Live Firebase</strong></span>
+                <span class="pill">Sync: <strong id="syncLabel">Connecting...</strong></span>
+                <span class="pill">Clock: <strong id="clockLabel">--:--:--</strong></span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="tab-row">
+                <button class="btn active" data-view="viewEcu" type="button">Bike ECU</button>
+                <button class="btn" data-view="viewHelmet" type="button">Helmet &amp; GPS</button>
+                <button class="btn" data-view="viewDemo" type="button">Demo Steps</button>
+            </div>
+            <div class="tab-row">
+                <button id="chimeBtn" class="btn" type="button">Enable Sound</button>
+                <button id="simBtn" class="btn" type="button">Demo Simulator: OFF</button>
+            </div>
+        </div>
+
+        <section id="simPanel" class="sim-panel">
+            <div class="box-top">
+                <span class="kicker" style="color:#fde68a;">Demo Simulator (Works Even Without Live Wi-Fi or
+                    Sensors)</span>
+                <span class="tag warn">SIMULATOR ON</span>
+            </div>
+            <div class="sim-btns">
+                <button class="btn ok" type="button" onclick="setPreset('UNLOCKED')">Unlocked (Owner OK)</button>
+                <button class="btn bad" type="button" onclick="setPreset('NO_KEY')">Hotspot OFF (Locked)</button>
+                <button class="btn bad" type="button" onclick="setPreset('REMOVED')">Helmet Tilted &gt;55&deg;</button>
+                <button class="btn bad" type="button" onclick="setPreset('ALCOHOL')">Alcohol Detected</button>
+                <button class="btn bad" type="button" onclick="setPreset('CRASH')">Crash Impact (3.6G)</button>
+                <button class="btn bad" type="button" onclick="setPreset('WRONG_MAC')">Wrong Helmet MAC</button>
+            </div>
+        </section>
+
+        <section id="viewEcu" class="view active">
+            <div id="lockBanner" class="banner locked">
+                <div>
+                    <div id="lockTitle" class="banner-title">IGNITION LOCKED</div>
+                    <div id="lockSub" class="banner-sub">Waiting for Helmet RH001 &amp; Owner R001 verification...</div>
+                </div>
+                <div class="rgb-box">
+                    <span id="rgbLed" class="led"></span>
+                    <span id="rgbLabel">ESP32-S3 RGB: RED (LOCKED)</span>
+                </div>
+            </div>
+
+            <div class="grid-4">
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">1. MAC Pair</span>
+                        <span id="g1Tag" class="tag warn">WAITING</span>
+                    </div>
+                    <div id="g1Val" class="main-val mono">--:--:--:--:--:--</div>
+                    <div id="g1Sub" class="sub-val">Binds to RH001 MAC in /bikePairing.json</div>
+                </div>
+
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">2. Owner Key</span>
+                        <span id="g2Tag" class="tag bad">LOCKED</span>
+                    </div>
+                    <div id="g2Val" class="main-val">Rider R001 Unverified</div>
+                    <div id="g2Sub" class="sub-val">Requires vivo T3x 5G hotspot connection</div>
+                </div>
+
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">3. Anti-Swap Wear</span>
+                        <span id="g3Tag" class="tag bad">NOT WORN</span>
+                    </div>
+                    <div id="g3Val" class="main-val">Tilt: 0.0&deg;</div>
+                    <div id="g3Sub" class="sub-val">Relocks if tilted &ge; 55&deg; for 2.5s</div>
+                </div>
+
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">4. Safety Check</span>
+                        <span id="g4Tag" class="tag warn">CHECKING</span>
+                    </div>
+                    <div id="g4Val" class="main-val">MQ-3: -- | 1.00G</div>
+                    <div id="g4Sub" class="sub-val">Blocks on alcohol, crash (&ge;3.2G), or SOS</div>
+                </div>
+            </div>
+
+            <div class="box">
+                <div class="box-top">
+                    <span class="kicker">ESP32-S3-N8R2 Bike ECU (/bikeEcu.json)</span>
+                    <span id="ecuTag" class="tag warn">WAITING</span>
+                </div>
+                <div class="kv-grid">
+                    <div class="kv">
+                        <span>Bike ID</span>
+                        <strong class="mono">KA00XX0000</strong>
+                    </div>
+                    <div class="kv">
+                        <span>Ignition Pin (GPIO 4)</span>
+                        <strong id="ecuPinVal">LOW (LOCKED)</strong>
+                    </div>
+                    <div class="kv">
+                        <span>IR Sensor (GPIO 6)</span>
+                        <strong id="ecuIrVal">--</strong>
+                    </div>
+                    <div class="kv">
+                        <span>Starter Button (GPIO 5)</span>
+                        <strong id="ecuBtnVal">Idle</strong>
+                    </div>
+                </div>
+                <div class="sim-btns" style="margin-top:12px;">
+                    <button id="clearPairBtn" class="btn bad" type="button">Reset / Unbind MAC</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="viewHelmet" class="view">
+            <div class="grid-2">
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">Helmet NodeMCU (/helmet.json)</span>
+                        <span id="hTag" class="tag bad">OFFLINE</span>
+                    </div>
+                    <div class="kv-grid">
+                        <div class="kv">
+                            <span>Status</span>
+                            <strong id="hStatusVal">OFFLINE</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Lock Reason</span>
+                            <strong id="hReasonVal">--</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Helmet MAC</span>
+                            <strong id="hMacVal" class="mono">--</strong>
+                        </div>
+                        <div class="kv">
+                            <span>MQ-3 (A0)</span>
+                            <strong id="hMq3Val">--</strong>
+                        </div>
+                        <div class="kv">
+                            <span>G-Force / Tilt</span>
+                            <strong id="hMotionVal">1.00 G / 0.0&deg;</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Alc / Crash / SOS</span>
+                            <strong id="hAlertsVal">NO / NO / NO</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div class="box-top">
+                        <span class="kicker">GPS Telemetry</span>
+                        <span id="gpsTag" class="tag warn">GPS: WAIT</span>
+                    </div>
+                    <div class="kv-grid">
+                        <div class="kv">
+                            <span>Latitude</span>
+                            <strong id="gpsLatVal" class="mono">0.000000</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Longitude</span>
+                            <strong id="gpsLonVal" class="mono">0.000000</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Speed</span>
+                            <strong id="gpsSpdVal">0.00 km/h</strong>
+                        </div>
+                        <div class="kv">
+                            <span>Fix Status</span>
+                            <strong id="gpsFixVal">Waiting for Sky</strong>
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <a id="mapsHref" class="map-link" href="https://maps.google.com/?q=0,0" target="_blank"
+                            rel="noopener noreferrer">Open in Google Maps &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="viewDemo" class="view">
+            <div class="box">
+                <div class="box-top">
+                    <span class="kicker">Quick Live Demo Guide</span>
+                    <span class="tag ok">1-HELMET &harr; 1-BIKE</span>
+                </div>
+                <div class="demo-steps">
+                    <div class="demo-step">
+                        <strong>1. Locked State:</strong> Keep <code>vivo T3x 5G</code> hotspot OFF. Banner stays
+                        <strong>RED (IGNITION LOCKED)</strong> and ESP32-S3 RGB is <strong>RED</strong>.
+                    </div>
+                    <div class="demo-step">
+                        <strong>2. Verified &amp; Unlocked:</strong> Turn <code>vivo T3x 5G</code> hotspot ON and cover
+                        IR sensor (<code>GPIO 6</code>) on ESP32-S3. Helmet shows <code>ACTIVE [OWNEROK]</code>, MAC
+                        pairs in <code>/bikePairing.json</code>, and banner turns <strong>GREEN (IGNITION
+                            UNLOCKED)</strong>.
+                    </div>
+                    <div class="demo-step">
+                        <strong>3. Relock Test:</strong> Tilt helmet &gt;55&deg; for 2.5s or turn hotspot OFF for 5s to
+                        see immediate relock back to <strong>RED</strong>.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const DB_URL = "https://roadguard-ai-a7b58-default-rtdb.firebaseio.com";
+        const URL_HELMET = `${DB_URL}/helmet.json`;
+        const URL_PAIRING = `${DB_URL}/bikePairing.json`;
+        const URL_ECU = `${DB_URL}/bikeEcu.json`;
+
+        const HELMET_ID = "RH001";
+        const RIDER_ID = "R001";
+        const BIKE_ID = "KA00XX0000";
+
+        let simActive = false;
+        let simData = null;
+        let soundOn = false;
+        let ctx = null;
+        let prevUnlocked = null;
+
+        document.querySelectorAll(".tab-row .btn[data-view]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".tab-row .btn[data-view]").forEach((b) => b.classList.remove("active"));
+                document.querySelectorAll(".view").forEach((v) => v.classList.remove("active"));
+                btn.classList.add("active");
+                document.getElementById(btn.dataset.view).classList.add("active");
+            });
+        });
+
+        function chime(unlocked) {
+            if (!soundOn) return;
+            try {
+                if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === "suspended") ctx.resume();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.frequency.value = unlocked ? 760 : 300;
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.24);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.25);
+            } catch (_) { }
+        }
+
+        document.getElementById("chimeBtn").addEventListener("click", () => {
+            soundOn = true;
+            if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+            if (ctx.state === "suspended") ctx.resume();
+            document.getElementById("chimeBtn").textContent = "Sound: ON";
+            chime(true);
+        });
+
+        document.getElementById("simBtn").addEventListener("click", () => {
+            simActive = !simActive;
+            const btn = document.getElementById("simBtn");
+            const panel = document.getElementById("simPanel");
+            if (simActive) {
+                btn.textContent = "Demo Simulator: ON";
+                btn.classList.add("sim-on");
+                panel.classList.add("open");
+                document.getElementById("modeLabel").textContent = "Simulator";
+                if (!simData) setPreset("UNLOCKED");
+                else renderAll(simData.helmet, simData.pairing, simData.ecu);
+            } else {
+                btn.textContent = "Demo Simulator: OFF";
+                btn.classList.remove("sim-on");
+                panel.classList.remove("open");
+                document.getElementById("modeLabel").textContent = "Live Firebase";
+                pollNow();
+            }
+        });
+
+        window.setPreset = function (type) {
+            const mac = "E0:98:06:21:D0:9E";
+            const helmet = {
+                status: "SAFE",
+                helmetId: HELMET_ID,
+                riderId: RIDER_ID,
+                bikeId: BIKE_ID,
+                helmetMAC: mac,
+                ownerVerified: true,
+                helmetWorn: true,
+                tiltDeg: 3.5,
+                lockReason: "OK",
+                alcohol: false,
+                alcoholValue: 210,
+                crash: false,
+                sos: false,
+                gForce: 1.0,
+                gpsLocked: true,
+                lat: 15.364708,
+                lon: 75.123955,
+                speed: 0.0
+            };
+            const pairing = { bikeId: BIKE_ID, helmetId: HELMET_ID, authorizedMAC: mac };
+            const ecu = { bikeId: BIKE_ID, ignitionUnlocked: true, irStandReady: true, starterPressed: false, pairedMAC: mac };
+
+            if (type === "NO_KEY") {
+                helmet.status = "LOCKED";
+                helmet.ownerVerified = false;
+                helmet.helmetWorn = false;
+                helmet.lockReason = "OWNER_WIFI_LOST";
+                ecu.ignitionUnlocked = false;
+            } else if (type === "REMOVED") {
+                helmet.status = "LOCKED";
+                helmet.ownerVerified = false;
+                helmet.helmetWorn = false;
+                helmet.tiltDeg = 66.0;
+                helmet.lockReason = "HELMET_REMOVED";
+                ecu.ignitionUnlocked = false;
+            } else if (type === "ALCOHOL") {
+                helmet.status = "ALCOHOL";
+                helmet.alcohol = true;
+                helmet.alcoholValue = 670;
+                ecu.ignitionUnlocked = false;
+            } else if (type === "CRASH") {
+                helmet.status = "CRASH";
+                helmet.crash = true;
+                helmet.gForce = 3.6;
+                ecu.ignitionUnlocked = false;
+            } else if (type === "WRONG_MAC") {
+                helmet.helmetMAC = "AA:BB:CC:11:22:33";
+                ecu.ignitionUnlocked = false;
+            }
+
+            simData = { helmet, pairing, ecu };
+            renderAll(helmet, pairing, ecu);
+        };
+
+        document.getElementById("clearPairBtn").addEventListener("click", async () => {
+            if (simActive && simData) {
+                simData.pairing = null;
+                renderAll(simData.helmet, null, simData.ecu);
+                return;
+            }
+            try {
+                await fetch(URL_PAIRING, { method: "DELETE" });
+                await pollNow();
+            } catch (_) { }
+        });
+
+        function setTag(el, text, cls) {
+            el.textContent = text;
+            el.className = `tag ${cls}`;
+        }
+
+        function renderAll(helmet, pairing, ecu) {
+            document.getElementById("clockLabel").textContent = new Date().toLocaleTimeString([], { hour12: false });
+            document.getElementById("syncLabel").textContent = simActive ? "Simulated" : "Live";
+
+            const online = Boolean(helmet && typeof helmet === "object");
+            const pairedMac = (pairing && typeof pairing.authorizedMAC === "string" && pairing.authorizedMAC.length >= 11)
+                ? pairing.authorizedMAC.toUpperCase()
+                : "";
+            const liveMac = (online && typeof helmet.helmetMAC === "string")
+                ? helmet.helmetMAC.toUpperCase()
+                : "";
+
+            const idOk = online && helmet.helmetId === HELMET_ID && helmet.riderId === RIDER_ID && helmet.bikeId === BIKE_ID;
+            const macOk = Boolean(pairedMac && liveMac && pairedMac === liveMac);
+            const ownerOk = Boolean(online && helmet.ownerVerified === true);
+            const wornOk = Boolean(online && helmet.helmetWorn === true);
+            const alc = Boolean(online && helmet.alcohol === true);
+            const crash = Boolean(online && helmet.crash === true);
+            const sos = Boolean(online && helmet.sos === true);
+            const safeOk = online && !alc && !crash && !sos;
+
+            const tilt = online && typeof helmet.tiltDeg === "number" ? helmet.tiltDeg : 0;
+            const gForce = online && typeof helmet.gForce === "number" ? helmet.gForce : 1.0;
+            const mq3 = online && typeof helmet.alcoholValue === "number" ? helmet.alcoholValue : "--";
+
+            const unlocked = Boolean(online && idOk && macOk && ownerOk && wornOk && safeOk);
+
+            const banner = document.getElementById("lockBanner");
+            const title = document.getElementById("lockTitle");
+            const sub = document.getElementById("lockSub");
+            const led = document.getElementById("rgbLed");
+            const rgbLabel = document.getElementById("rgbLabel");
+
+            if (unlocked) {
+                banner.className = "banner unlocked";
+                title.textContent = "IGNITION UNLOCKED";
+                sub.textContent = "Helmet RH001, Owner R001, Wear Check, and Safety Checks passed.";
+                led.className = "led green";
+                rgbLabel.textContent = "ESP32-S3 RGB: GREEN (UNLOCKED)";
+            } else {
+                banner.className = "banner locked";
+                title.textContent = "IGNITION LOCKED";
+                led.className = "led";
+                rgbLabel.textContent = "ESP32-S3 RGB: RED (LOCKED)";
+
+                if (!online) sub.textContent = "Helmet NodeMCU offline — waiting for /helmet.json telemetry.";
+                else if (!idOk) sub.textContent = "Identity mismatch on /helmet.json.";
+                else if (!pairedMac) sub.textContent = "No helmet MAC bound in /bikePairing.json yet.";
+                else if (!macOk) sub.textContent = `Helmet MAC mismatch (${liveMac || "none"} != ${pairedMac}).`;
+                else if (!ownerOk) sub.textContent = `Owner locked (${helmet.lockReason || "NO_KEY"}).`;
+                else if (!wornOk) sub.textContent = `Helmet not worn or tilted (${tilt.toFixed(1)}°).`;
+                else if (crash) sub.textContent = `Crash impact detected (${gForce.toFixed(2)} G).`;
+                else if (alc) sub.textContent = `Alcohol detected (${mq3}).`;
+                else if (sos) sub.textContent = "SOS alert active.";
+                else sub.textContent = "Safety lock active.";
+            }
+
+            if (prevUnlocked !== null && prevUnlocked !== unlocked) chime(unlocked);
+            prevUnlocked = unlocked;
+
+            if (!pairedMac) {
+                setTag(document.getElementById("g1Tag"), "UNPAIRED", "warn");
+                document.getElementById("g1Val").textContent = "Awaiting MAC";
+            } else if (macOk && idOk) {
+                setTag(document.getElementById("g1Tag"), "PAIRED", "ok");
+                document.getElementById("g1Val").textContent = pairedMac;
+            } else {
+                setTag(document.getElementById("g1Tag"), "MISMATCH", "bad");
+                document.getElementById("g1Val").textContent = pairedMac;
+            }
+
+            if (ownerOk && idOk) {
+                setTag(document.getElementById("g2Tag"), "VERIFIED", "ok");
+                document.getElementById("g2Val").textContent = "Rider R001 OK";
+            } else {
+                setTag(document.getElementById("g2Tag"), "LOCKED", "bad");
+                document.getElementById("g2Val").textContent = "Owner Unverified";
+            }
+
+            document.getElementById("g3Val").textContent = `Tilt: ${tilt.toFixed(1)}°`;
+            if (wornOk) {
+                setTag(document.getElementById("g3Tag"), "WORN", "ok");
+            } else {
+                setTag(document.getElementById("g3Tag"), "REMOVED", "bad");
+            }
+
+            document.getElementById("g4Val").textContent = `MQ-3: ${mq3} | ${gForce.toFixed(2)}G`;
+            if (!online) {
+                setTag(document.getElementById("g4Tag"), "NO DATA", "warn");
+            } else if (safeOk) {
+                setTag(document.getElementById("g4Tag"), "CLEAR", "ok");
+            } else {
+                setTag(document.getElementById("g4Tag"), "ALERT", "bad");
+            }
+
+            if (ecu && typeof ecu === "object") {
+                const ecuIgn = ecu.ignitionUnlocked === true;
+                setTag(document.getElementById("ecuTag"), ecuIgn ? "UNLOCKED" : "LOCKED", ecuIgn ? "ok" : "bad");
+                document.getElementById("ecuPinVal").textContent = ecuIgn ? "HIGH (UNLOCKED)" : "LOW (LOCKED)";
+                document.getElementById("ecuIrVal").textContent = ecu.irStandReady === true ? "READY (COVERED)" : "BLOCKED";
+                document.getElementById("ecuBtnVal").textContent = ecu.starterPressed === true ? "PRESSED" : "Idle";
+            } else {
+                setTag(document.getElementById("ecuTag"), "WAITING", "warn");
+                document.getElementById("ecuPinVal").textContent = "Waiting for ECU";
+                document.getElementById("ecuIrVal").textContent = "--";
+                document.getElementById("ecuBtnVal").textContent = "Idle";
+            }
+
+            setTag(document.getElementById("hTag"), online ? "ONLINE" : "OFFLINE", online ? "ok" : "bad");
+            document.getElementById("hStatusVal").textContent = online ? (helmet.status || "ACTIVE") : "OFFLINE";
+            document.getElementById("hReasonVal").textContent = online ? (helmet.lockReason || "OK") : "--";
+            document.getElementById("hMacVal").textContent = liveMac || "--";
+            document.getElementById("hMq3Val").textContent = online ? `${mq3}` : "--";
+            document.getElementById("hMotionVal").textContent = online ? `${gForce.toFixed(2)} G / ${tilt.toFixed(1)}°` : "1.00 G / 0.0°";
+            document.getElementById("hAlertsVal").textContent = `${alc ? "YES" : "NO"} / ${crash ? "YES" : "NO"} / ${sos ? "YES" : "NO"}`;
+
+            const lat = online && typeof helmet.lat === "number" ? helmet.lat : 0;
+            const lon = online && typeof helmet.lon === "number" ? helmet.lon : 0;
+            const spd = online && typeof helmet.speed === "number" ? helmet.speed : 0;
+            const gpsOk = Boolean(online && helmet.gpsLocked === true);
+
+            setTag(document.getElementById("gpsTag"), gpsOk ? "GPS: OK" : "GPS: WAIT", gpsOk ? "ok" : "warn");
+            document.getElementById("gpsLatVal").textContent = lat.toFixed(6);
+            document.getElementById("gpsLonVal").textContent = lon.toFixed(6);
+            document.getElementById("gpsSpdVal").textContent = `${spd.toFixed(2)} km/h`;
+            document.getElementById("gpsFixVal").textContent = gpsOk ? "Fix Locked" : "Waiting for Sky";
+            document.getElementById("mapsHref").href = `https://maps.google.com/?q=${lat},${lon}`;
+        }
+
+        async function readJson(url) {
+            const r = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return await r.json();
+        }
+
+        async function pollNow() {
+            if (simActive) return;
+            try {
+                const [helmet, pairing, ecu] = await Promise.all([
+                    readJson(URL_HELMET).catch(() => null),
+                    readJson(URL_PAIRING).catch(() => null),
+                    readJson(URL_ECU).catch(() => null)
+                ]);
+                renderAll(helmet, pairing, ecu);
+            } catch (_) {
+                document.getElementById("syncLabel").textContent = "Retry";
+            }
+        }
+
+        pollNow();
+        setInterval(pollNow, 1500);
+    </script>
+</body>
+
+</html>
